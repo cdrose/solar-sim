@@ -1,16 +1,57 @@
-# React + Vite
+# ☀️ Solar Sim
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A browser-based home solar system simulator. Configure your household usage profile, size your solar + battery setup, and estimate costs, savings, and payback periods — no backend required.
 
-Currently, two official plugins are available:
+**Live demo:** https://cdrose.github.io/solar-sim/
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## Features
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Daily usage profile** — adjust morning, midday, evening and overnight consumption with sliders, or pick from preset household profiles
+- **Solar configuration** — set panel capacity (kW), battery storage (kWh) and system costs
+- **Simulation** — run summer/winter × sunny/cloudy day scenarios to see:
+  - Solar direct usage, battery discharge and grid import
+  - Energy exported to the grid
+- **Cost & payback** — enter panel, inverter and battery pricing to calculate estimated annual savings and payback period
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Running locally
+
+```bash
+npm install
+npm run dev
+```
+
+Then open http://localhost:5173
+
+---
+
+## Building for production
+
+```bash
+npm run build       # output in dist/
+npm run preview     # preview the production build locally
+```
+
+---
+
+## Deploying to GitHub Pages
+
+Deployments are automated via `.github/workflows/deploy.yml`. Any push to `main` triggers a build and deploy.
+
+To set up on a new repo:
+1. Push to GitHub
+2. Go to **Settings → Pages → Source → GitHub Actions**
+3. The workflow runs automatically — site is live at `https://<user>.github.io/<repo>/`
+
+The `GITHUB_PAGES=true` environment variable in the workflow activates the correct base path in `vite.config.js`.
+
+---
+
+## Tech stack
+
+- [React](https://react.dev/) + [Vite](https://vitejs.dev/)
+- [Recharts](https://recharts.org/) for charts
+- [MUI](https://mui.com/) for UI components
