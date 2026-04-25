@@ -5,7 +5,7 @@ import {
 } from '@mui/material'
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, PieChart, Pie, Cell,
+  ResponsiveContainer, PieChart, Pie, Cell, ComposedChart, Line,
 } from 'recharts'
 import { simulate } from '../api'
 
@@ -92,7 +92,7 @@ function ScenarioCard({ scenario, usageParams, solarSetup }) {
             {/* Stacked area chart */}
             <Box sx={{ height: 150 }}>
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
+                <ComposedChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
                   <defs>
                     {[['solarGrad','#22c55e'],['battGrad','#3b82f6'],['gridGrad','#ef4444']].map(([id, col]) => (
                       <linearGradient key={id} id={id} x1="0" y1="0" x2="0" y2="1">
@@ -105,10 +105,11 @@ function ScenarioCard({ scenario, usageParams, solarSetup }) {
                   <XAxis dataKey="hour" tick={{ fontSize: 9 }} interval={5} />
                   <YAxis tick={{ fontSize: 9 }} unit="kW" width={36} />
                   <Tooltip content={<CustomTooltip />} />
+                  <Line type="monotone" dataKey="Solar Gen" stroke="#f59e0b" strokeWidth={1.5} strokeDasharray="5 3" dot={false} />
                   <Area type="monotone" dataKey="Solar Direct" stackId="1" stroke="#22c55e" fill="url(#solarGrad)" strokeWidth={1.5} dot={false} />
                   <Area type="monotone" dataKey="Battery"      stackId="1" stroke="#3b82f6" fill="url(#battGrad)"  strokeWidth={1.5} dot={false} />
                   <Area type="monotone" dataKey="Grid Import"  stackId="1" stroke="#ef4444" fill="url(#gridGrad)"  strokeWidth={1.5} dot={false} />
-                </AreaChart>
+                </ComposedChart>
               </ResponsiveContainer>
             </Box>
 
@@ -173,6 +174,10 @@ export default function SimulationResults({ usageParams, solarSetup }) {
               <Typography variant="caption" color="text.secondary">{l}</Typography>
             </Box>
           ))}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+            <Box sx={{ width: 18, height: 0, borderTop: '2px dashed #f59e0b', flexShrink: 0 }} />
+            <Typography variant="caption" color="text.secondary">Solar Generation</Typography>
+          </Box>
         </Box>
       </CardContent>
     </Card>
