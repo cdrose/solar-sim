@@ -38,6 +38,8 @@ function r1(v) {
 // ---------------------------------------------------------------------------
 
 export function buildUsageProfile(params) {
+  if (params.hourly) return [...params.hourly]
+
   const {
     morning_peak, morning_hour,
     midday_peak,  midday_hour,

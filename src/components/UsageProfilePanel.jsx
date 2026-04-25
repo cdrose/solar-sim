@@ -3,10 +3,13 @@ import {
   Card, CardContent, Typography, Slider, Button,
   Stack, Box, CircularProgress, Divider,
 } from '@mui/material'
+import TuneIcon from '@mui/icons-material/Tune'
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts'
 import { getPresets, getUsageProfile } from '../api'
+import { buildUsageProfile } from '../simulator'
+import HourlySliderDrawer from './HourlySliderDrawer'
 
 // Groups ordered left→right matching chart from 6am.
 // flex values are proportional to each period's hour-span across 24h:
@@ -75,6 +78,9 @@ export default function UsageProfilePanel({ params, onChange }) {
   const [presets, setPresets] = useState([])
   const [chartData, setChartData] = useState([])
   const [loading, setLoading] = useState(false)
+  const [drawerOpen, setDrawerOpen] = useState(false)
+
+  const isCustom = Boolean(params.hourly)
 
   useEffect(() => {
     getPresets().then(setPresets).catch(console.error)
@@ -115,7 +121,29 @@ export default function UsageProfilePanel({ params, onChange }) {
               {p.name}
             </Button>
           ))}
+          <Button
+            size="small"
+            variant={isCustom ? 'contained' : 'outlined'}
+            color={isCustom ? 'warning' : 'inherit'}
+            startIcon={<TuneIcon fontSize="small" />}
+            onClick={() => {
+              if (!isCustom) {
+                onChange({ hourly: buildUsageProfile(params) })
+              }
+              setDrawerOpen(true)
+            }}
+            sx={{ borderRadius: 4, textTransform: 'none', fontSize: 12 }}
+          >
+            Custom
+          </Button>
         </Stack>
+
+        <HourlySliderDrawer
+          open={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+          hourly={isCustom ? params.hourly : Array(24).fill(0.3)}
+          onChange={(hourly) => onChange({ hourly })}
+        />
 
         {/* Chart — full width, proper Y axis */}
         <Box sx={{ height: 180, mb: 2, position: 'relative' }}>
@@ -152,52 +180,67 @@ export default function UsageProfilePanel({ params, onChange }) {
 
         <Divider sx={{ mb: 1.5 }} />
 
-        {/*
-          Sliders pinned under their chart sections.
-          pl matches chart left-margin (4px) + YAxis width (52px) = 56px.
-          pr matches chart right-margin (8px).
-          Each group's flex value = its hour-span, so widths stay proportional.
-        */}
-        <Box sx={{ pl: '56px', pr: '8px' }}>
-          <Box sx={{ display: 'flex' }}>
-            {SLIDER_GROUPS.map((group, gi) => (
-              <Box
-                key={group.label}
-                sx={{
-                  flex: group.flex,
-                  minWidth: 0,
-                  pl: gi === 0 ? 0 : 1,
-                  borderLeft: gi > 0 ? '1px dashed' : 'none',
-                  borderColor: 'divider',
-                }}
+        {isCustom ? (
+          <Box sx={{ pl: '56px', pr: '8px' }}>
+            <Typography variant="caption" color="text.secondary">
+              Custom hourly profile active.{' '}
+              <span
+                onClick={() => setDrawerOpen(true)}
+                style={{ cursor: 'pointer', textDecoration: 'underline' }}
               >
-                <Typography
-                  variant="caption"
-                  fontWeight={700}
-                  sx={{ color: group.color, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', mb: 0.5 }}
-                >
-                  {group.label}
-                </Typography>
-                {group.sliders.map((s) => (
-                  <Box key={s.key} mb={0.5}>
-                    <Typography variant="caption" color="text.secondary" display="block" lineHeight={1.3}>
-                      {s.label}
-                      <br />
-                      <strong style={{ color: group.color }}>{fmtVal(params[s.key], s)}</strong>
-                    </Typography>
-                    <Slider
-                      size="small"
-                      value={params[s.key]}
-                      min={s.min} max={s.max} step={s.step}
-                      onChange={(_, v) => onChange({ ...params, [s.key]: v })}
-                      sx={{ color: group.color, display: 'block', pt: 0.5, pb: 0 }}
-                    />
-                  </Box>
-                ))}
-              </Box>
-            ))}
+                Edit hourly values
+              </span>
+              {' '}or select a preset above to switch back.
+            </Typography>
           </Box>
-        </Box>
+        ) : (
+          /*
+            Sliders pinned under their chart sections.
+            pl matches chart left-margin (4px) + YAxis width (52px) = 56px.
+            pr matches chart right-margin (8px).
+            Each group's flex value = its hour-span, so widths stay proportional.
+          */
+          <Box sx={{ pl: '56px', pr: '8px' }}>
+            <Box sx={{ display: 'flex' }}>
+              {SLIDER_GROUPS.map((group, gi) => (
+                <Box
+                  key={group.label}
+                  sx={{
+                    flex: group.flex,
+                    minWidth: 0,
+                    pl: gi === 0 ? 0 : 1,
+                    borderLeft: gi > 0 ? '1px dashed' : 'none',
+                    borderColor: 'divider',
+                  }}
+                >
+                  <Typography
+                    variant="caption"
+                    fontWeight={700}
+                    sx={{ color: group.color, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', mb: 0.5 }}
+                  >
+                    {group.label}
+                  </Typography>
+                  {group.sliders.map((s) => (
+                    <Box key={s.key} mb={0.5}>
+                      <Typography variant="caption" color="text.secondary" display="block" lineHeight={1.3}>
+                        {s.label}
+                        <br />
+                        <strong style={{ color: group.color }}>{fmtVal(params[s.key], s)}</strong>
+                      </Typography>
+                      <Slider
+                        size="small"
+                        value={params[s.key]}
+                        min={s.min} max={s.max} step={s.step}
+                        onChange={(_, v) => onChange({ ...params, [s.key]: v })}
+                        sx={{ color: group.color, display: 'block', pt: 0.5, pb: 0 }}
+                      />
+                    </Box>
+                  ))}
+                </Box>
+              ))}
+            </Box>
+          </Box>
+        )}
       </CardContent>
     </Card>
   )
