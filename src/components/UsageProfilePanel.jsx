@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   Card, CardContent, Typography, Slider, Button,
   Stack, Box, CircularProgress, Divider,
@@ -78,7 +78,8 @@ export default function UsageProfilePanel({ params, onChange }) {
   const [presets, setPresets] = useState([])
   const [chartData, setChartData] = useState([])
   const [loading, setLoading] = useState(false)
-  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [anchorEl, setAnchorEl] = useState(null)
+  const customBtnRef = useRef(null)
 
   const isCustom = Boolean(params.hourly)
 
@@ -122,15 +123,16 @@ export default function UsageProfilePanel({ params, onChange }) {
             </Button>
           ))}
           <Button
+            ref={customBtnRef}
             size="small"
             variant={isCustom ? 'contained' : 'outlined'}
             color={isCustom ? 'warning' : 'inherit'}
             startIcon={<TuneIcon fontSize="small" />}
-            onClick={() => {
+            onClick={(e) => {
               if (!isCustom) {
                 onChange({ hourly: buildUsageProfile(params) })
               }
-              setDrawerOpen(true)
+              setAnchorEl(e.currentTarget)
             }}
             sx={{ borderRadius: 4, textTransform: 'none', fontSize: 12 }}
           >
@@ -139,8 +141,8 @@ export default function UsageProfilePanel({ params, onChange }) {
         </Stack>
 
         <HourlySliderDrawer
-          open={drawerOpen}
-          onClose={() => setDrawerOpen(false)}
+          anchorEl={anchorEl}
+          onClose={() => setAnchorEl(null)}
           hourly={isCustom ? params.hourly : Array(24).fill(0.3)}
           onChange={(hourly) => onChange({ hourly })}
         />
@@ -185,7 +187,7 @@ export default function UsageProfilePanel({ params, onChange }) {
             <Typography variant="caption" color="text.secondary">
               Custom hourly profile active.{' '}
               <span
-                onClick={() => setDrawerOpen(true)}
+                onClick={() => setAnchorEl(customBtnRef.current)}
                 style={{ cursor: 'pointer', textDecoration: 'underline' }}
               >
                 Edit hourly values

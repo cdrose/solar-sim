@@ -1,7 +1,7 @@
+import { useState, useEffect } from 'react'
 import {
-  Drawer, Box, Typography, Slider, IconButton, Divider,
+  Popover, Box, Typography, Slider, Button, Divider,
 } from '@mui/material'
-import CloseIcon from '@mui/icons-material/Close'
 
 const SLIDER_HEIGHT = 160
 
@@ -12,33 +12,38 @@ function hourColor(h) {
   return '#60a5fa'
 }
 
-export default function HourlySliderDrawer({ open, onClose, hourly, onChange }) {
+export default function HourlySliderDrawer({ anchorEl, onClose, hourly, onChange }) {
+  const open = Boolean(anchorEl)
+  const [draft, setDraft] = useState(() => [...hourly])
+
+  // Reset draft to committed values each time the popover opens
+  useEffect(() => {
+    if (open) setDraft([...hourly])
+  }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  function handleApply() {
+    onChange(draft)
+    onClose()
+  }
+
   return (
-    <Drawer
-      anchor="right"
+    <Popover
       open={open}
+      anchorEl={anchorEl}
       onClose={onClose}
-      PaperProps={{ sx: { width: { xs: '100vw', sm: 700 }, display: 'flex', flexDirection: 'column' } }}
+      anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+      transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+      PaperProps={{ sx: { width: { xs: '95vw', sm: 690 }, p: 2 } }}
     >
-      <Box sx={{ px: 2, pt: 2, pb: 1, display: 'flex', alignItems: 'center' }}>
-        <Typography variant="h6" fontWeight={700} flex={1}>
-          ⚡ Custom Hourly Profile
-        </Typography>
-        <IconButton onClick={onClose} size="small">
-          <CloseIcon />
-        </IconButton>
-      </Box>
-
-      <Box sx={{ px: 2, pb: 1 }}>
-        <Typography variant="caption" color="text.secondary">
-          Set power usage (kW) for each hour of the day. Drag sliders up to increase usage.
-        </Typography>
-      </Box>
-
-      <Divider />
+      <Typography variant="subtitle2" fontWeight={700} mb={0.5}>
+        ⚡ Custom Hourly Profile
+      </Typography>
+      <Typography variant="caption" color="text.secondary" display="block" mb={1}>
+        Set power usage (kW) for each hour. Click Apply to update the simulation.
+      </Typography>
 
       {/* Legend */}
-      <Box sx={{ px: 2, pt: 1.5, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+      <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 1.5 }}>
         {[
           { label: 'Night (0–5)', color: '#60a5fa' },
           { label: 'Morning (6–10)', color: '#fb923c' },
@@ -46,25 +51,19 @@ export default function HourlySliderDrawer({ open, onClose, hourly, onChange }) 
           { label: 'Evening (16–22)', color: '#c084fc' },
         ].map(({ label, color }) => (
           <Box key={label} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: color }} />
+            <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: color }} />
             <Typography variant="caption" color="text.secondary">{label}</Typography>
           </Box>
         ))}
       </Box>
 
+      <Divider sx={{ mb: 1.5 }} />
+
       {/* Sliders */}
-      <Box sx={{ flex: 1, overflow: 'auto', px: 2, pt: 2, pb: 2 }}>
+      <Box sx={{ overflowX: 'auto', pb: 1 }}>
         <Box sx={{ display: 'flex', gap: '3px', minWidth: 'max-content' }}>
-          {hourly.map((val, h) => (
-            <Box
-              key={h}
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                width: 26,
-              }}
-            >
+          {draft.map((val, h) => (
+            <Box key={h} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 26 }}>
               <Typography variant="caption" sx={{ fontSize: 9, color: 'text.secondary', mb: 0.25 }}>
                 {h}
               </Typography>
@@ -76,9 +75,9 @@ export default function HourlySliderDrawer({ open, onClose, hourly, onChange }) 
                   max={8}
                   step={0.1}
                   onChange={(_, v) => {
-                    const next = [...hourly]
+                    const next = [...draft]
                     next[h] = v
-                    onChange(next)
+                    setDraft(next)
                   }}
                   sx={{
                     height: SLIDER_HEIGHT - 16,
@@ -97,8 +96,8 @@ export default function HourlySliderDrawer({ open, onClose, hourly, onChange }) 
         </Box>
 
         {/* Hour axis labels */}
-        <Box sx={{ display: 'flex', gap: '3px', minWidth: 'max-content', mt: 0.5, pl: 0 }}>
-          {hourly.map((_, h) => (
+        <Box sx={{ display: 'flex', gap: '3px', minWidth: 'max-content', mt: 0.5 }}>
+          {draft.map((_, h) => (
             <Box key={h} sx={{ width: 26, textAlign: 'center' }}>
               {h % 6 === 0 && (
                 <Typography variant="caption" sx={{ fontSize: 9, color: 'text.disabled' }}>
@@ -109,6 +108,17 @@ export default function HourlySliderDrawer({ open, onClose, hourly, onChange }) 
           ))}
         </Box>
       </Box>
-    </Drawer>
+
+      <Divider sx={{ mt: 1, mb: 1.5 }} />
+
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+        <Button size="small" onClick={onClose} sx={{ textTransform: 'none' }}>
+          Cancel
+        </Button>
+        <Button size="small" variant="contained" color="warning" onClick={handleApply} sx={{ textTransform: 'none' }}>
+          Apply
+        </Button>
+      </Box>
+    </Popover>
   )
 }
