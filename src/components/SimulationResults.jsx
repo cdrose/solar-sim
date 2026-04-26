@@ -4,7 +4,7 @@ import {
   Divider,
 } from '@mui/material'
 import {
-  Area, XAxis, YAxis, CartesianGrid,
+  Area, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell, ComposedChart, Line,
 } from 'recharts'
 import { simulate } from '../api'
