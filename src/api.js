@@ -5,8 +5,11 @@ import { PRESETS, buildUsageProfile, runSimulation, calcPayback } from './simula
 export const getPresets = () =>
   Promise.resolve(PRESETS)
 
-export const getUsageProfile = (params) =>
-  Promise.resolve({ hours: Array.from({ length: 24 }, (_, i) => i), usage: buildUsageProfile(params) })
+export const getUsageProfile = (params) => {
+  const usage = buildUsageProfile(params)
+  const intervals = Array.from({ length: 96 }, (_, i) => i * 0.25 + 0.125)
+  return Promise.resolve({ intervals, usage })
+}
 
 export const simulate = ({ usage_params, solar_setup, season, conditions }) =>
   Promise.resolve(runSimulation(usage_params, solar_setup, season, conditions))

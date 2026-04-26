@@ -8,6 +8,7 @@ import {
   ResponsiveContainer, PieChart, Pie, Cell, ComposedChart, Line,
 } from 'recharts'
 import { simulate } from '../api'
+import { fmtTime } from '../simulator'
 
 const SCENARIOS = [
   { season: 'summer', conditions: 'sunny',  label: 'Summer Sunny',  emoji: '☀️',  accent: '#f59e0b' },
@@ -59,8 +60,8 @@ function ScenarioCard({ scenario, usageParams, solarSetup }) {
   }, [usageParams, solarSetup, scenario.season, scenario.conditions])
 
   const chartData = data
-    ? data.hours.map((h, i) => ({
-        hour: `${h}:00`,
+    ? data.intervals.map((t, i) => ({
+        hour: fmtTime(t),
         'Solar Direct': data.solar_direct[i],
         'Battery':      data.battery_discharge[i],
         'Grid Import':  data.grid_import[i],
@@ -102,7 +103,7 @@ function ScenarioCard({ scenario, usageParams, solarSetup }) {
                     ))}
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
-                  <XAxis dataKey="hour" tick={{ fontSize: 9 }} interval={5} />
+                  <XAxis dataKey="hour" tick={{ fontSize: 9 }} interval={23} />
                   <YAxis tick={{ fontSize: 9 }} unit="kW" width={36} />
                   <Tooltip content={<CustomTooltip />} />
                   <Line type="monotone" dataKey="Solar Gen" stroke="#f59e0b" strokeWidth={1.5} strokeDasharray="5 3" dot={false} />

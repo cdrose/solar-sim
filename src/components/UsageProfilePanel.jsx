@@ -8,7 +8,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts'
 import { getPresets, getUsageProfile } from '../api'
-import { buildUsageProfile } from '../simulator'
+import { buildUsageProfile, fmtTime } from '../simulator'
 import HourlySliderDrawer from './HourlySliderDrawer'
 
 // Groups ordered left→right matching chart from 6am.
@@ -91,11 +91,11 @@ export default function UsageProfilePanel({ params, onChange }) {
     setLoading(true)
     getUsageProfile(params)
       .then((res) => {
-        // Rotate to start at 6am so chart reads 6:00 → 5:00
+        // Rotate to start at 6am (index 24 = 6h × 4 intervals/h)
         setChartData(
-          Array.from({ length: 24 }, (_, i) => {
-            const h = (i + 6) % 24
-            return { hour: `${h}:00`, usage: res.usage[h] }
+          Array.from({ length: 96 }, (_, i) => {
+            const idx = (i + 24) % 96
+            return { hour: fmtTime(res.intervals[idx]), usage: res.usage[idx] }
           })
         )
       })
@@ -163,7 +163,7 @@ export default function UsageProfilePanel({ params, onChange }) {
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-              <XAxis dataKey="hour" tick={{ fontSize: 10 }} interval={3} />
+              <XAxis dataKey="hour" tick={{ fontSize: 10 }} interval={15} />
               <YAxis
                 tick={{ fontSize: 10 }}
                 width={52}

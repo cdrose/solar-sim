@@ -5,19 +5,20 @@ const BATTERY_EFFICIENCY = 0.90
 const SUMMER_DAYS = 183
 const WINTER_DAYS = 182
 
+const INTERVAL_HOURS = 0.25   // 15-minute intervals
+const TOTAL_INTERVALS = 96    // 24h × 4
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function gaussian(hours, center, sigma, amplitude) {
-  const values = hours.map((h) => amplitude * Math.exp(-0.5 * ((h - center) / sigma) ** 2))
-  // When center falls between integer hours both neighbours are equidistant,
-  // producing a flat top. Inject the true peak at the nearest integer instead.
-  if (center % 1 !== 0) {
-    const nearest = Math.round(center)
-    if (nearest >= 0 && nearest < 24) values[nearest] = amplitude
-  }
-  return values
+// Midpoint time (in hours) for interval index i
+function intervalMidpoint(i) {
+  return i * INTERVAL_HOURS + INTERVAL_HOURS / 2
+}
+
+function gaussian(t, center, sigma, amplitude) {
+  return amplitude * Math.exp(-0.5 * ((t - center) / sigma) ** 2)
 }
 
 function arrayAdd(a, b) {
@@ -41,11 +42,30 @@ function r1(v) {
 }
 
 // ---------------------------------------------------------------------------
+// Time label formatter — shared by chart components
+// ---------------------------------------------------------------------------
+
+export function fmtTime(t) {
+  const h = Math.floor(t)
+  const m = Math.round((t % 1) * 60)
+  return `${h}:${String(m).padStart(2, '0')}`
+}
+
+// ---------------------------------------------------------------------------
 // Usage profile
 // ---------------------------------------------------------------------------
 
 export function buildUsageProfile(params) {
-  if (params.hourly) return [...params.hourly]
+  if (params.hourly) {
+    // Custom 24-value profile: linearly interpolate to 96 midpoint samples
+    const h = params.hourly
+    return Array.from({ length: TOTAL_INTERVALS }, (_, i) => {
+      const t = intervalMidpoint(i)
+      const slot = Math.min(Math.floor(t), 22)  // clamp to avoid overflow at 23.875
+      const frac = t - slot
+      return r3(h[slot] + (h[slot + 1] - h[slot]) * frac)
+    })
+  }
 
   const {
     morning_peak, morning_hour,
@@ -54,14 +74,14 @@ export function buildUsageProfile(params) {
     night_avg,
   } = params
 
-  const hours = Array.from({ length: 24 }, (_, i) => i)
-  let profile = Array(24).fill(night_avg)
-
-  profile = arrayAdd(profile, gaussian(hours, morning_hour, 1.2, morning_peak))
-  profile = arrayAdd(profile, gaussian(hours, midday_hour,  1.5, midday_peak))
-  profile = arrayAdd(profile, gaussian(hours, evening_hour, 2.0, evening_peak))
-
-  return profile.map(r3)
+  return Array.from({ length: TOTAL_INTERVALS }, (_, i) => {
+    const t = intervalMidpoint(i)
+    const val = night_avg
+      + gaussian(t, morning_hour, 1.2, morning_peak)
+      + gaussian(t, midday_hour,  1.5, midday_peak)
+      + gaussian(t, evening_hour, 2.0, evening_peak)
+    return r3(val)
+  })
 }
 
 // ---------------------------------------------------------------------------
@@ -69,12 +89,14 @@ export function buildUsageProfile(params) {
 // ---------------------------------------------------------------------------
 
 export function buildSolarCurve(setup, season, conditions) {
-  const hours = Array.from({ length: 24 }, (_, i) => i)
   const solarNoon = season === 'summer' ? 13.0 : 12.5
   const sigma     = season === 'summer' ? 2.8  : 1.8
   const peak      = conditions === 'sunny' ? setup.total_kw : setup.total_kw * 0.35
 
-  return hours.map((h) => r3(Math.max(0, peak * Math.exp(-0.5 * ((h - solarNoon) / sigma) ** 2))))
+  return Array.from({ length: TOTAL_INTERVALS }, (_, i) => {
+    const t = intervalMidpoint(i)
+    return r3(Math.max(0, gaussian(t, solarNoon, sigma, peak)))
+  })
 }
 
 // ---------------------------------------------------------------------------
@@ -88,40 +110,41 @@ export function runSimulation(usageParams, solarSetup, season, conditions) {
   let batteryState = 0.0
   const battCap = solarSetup.battery_kwh
 
-  const solarDirect      = Array(24).fill(0)
-  const batteryCharge    = Array(24).fill(0)
-  const batteryDischarge = Array(24).fill(0)
-  const gridImport       = Array(24).fill(0)
-  const gridExport       = Array(24).fill(0)
+  const solarDirect      = Array(TOTAL_INTERVALS).fill(0)
+  const batteryCharge    = Array(TOTAL_INTERVALS).fill(0)
+  const batteryDischarge = Array(TOTAL_INTERVALS).fill(0)
+  const gridImport       = Array(TOTAL_INTERVALS).fill(0)
+  const gridExport       = Array(TOTAL_INTERVALS).fill(0)
 
-  for (let h = 0; h < 24; h++) {
-    const net = solar[h] - usage[h]
+  for (let i = 0; i < TOTAL_INTERVALS; i++) {
+    const net = solar[i] - usage[i]
 
     if (net >= 0) {
-      solarDirect[h] = usage[h]
+      solarDirect[i] = usage[i]
       const headroom  = (battCap - batteryState) / BATTERY_EFFICIENCY
       const chargeIn  = Math.min(net, headroom)
-      batteryCharge[h] = chargeIn
+      batteryCharge[i] = chargeIn
       batteryState = Math.min(batteryState + chargeIn * BATTERY_EFFICIENCY, battCap)
-      gridExport[h] = Math.max(net - chargeIn, 0)
+      gridExport[i] = Math.max(net - chargeIn, 0)
     } else {
       const deficit   = -net
-      solarDirect[h]  = solar[h]
+      solarDirect[i]  = solar[i]
       const discharge = Math.min(deficit, batteryState * BATTERY_EFFICIENCY)
-      batteryDischarge[h] = discharge
+      batteryDischarge[i] = discharge
       batteryState = Math.max(batteryState - discharge / BATTERY_EFFICIENCY, 0)
-      gridImport[h] = Math.max(deficit - discharge, 0)
+      gridImport[i] = Math.max(deficit - discharge, 0)
     }
   }
 
-  const totalUsage    = arraySum(usage)
-  const totalSolar    = arraySum(solar)
-  const totalImport   = arraySum(gridImport)
-  const totalExport   = arraySum(gridExport)
-  const selfConsumed  = arraySum(solarDirect) + arraySum(batteryDischarge)
+  // kWh = sum of kW values × interval duration
+  const totalUsage    = arraySum(usage)   * INTERVAL_HOURS
+  const totalSolar    = arraySum(solar)   * INTERVAL_HOURS
+  const totalImport   = arraySum(gridImport)       * INTERVAL_HOURS
+  const totalExport   = arraySum(gridExport)       * INTERVAL_HOURS
+  const selfConsumed  = (arraySum(solarDirect) + arraySum(batteryDischarge)) * INTERVAL_HOURS
 
   return {
-    hours:             Array.from({ length: 24 }, (_, i) => i),
+    intervals:         Array.from({ length: TOTAL_INTERVALS }, (_, i) => intervalMidpoint(i)),
     usage:             usage,
     solar:             solar,
     solar_direct:      solarDirect.map(r3),
