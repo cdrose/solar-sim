@@ -91,12 +91,12 @@ export default function UsageProfilePanel({ params, onChange }) {
     setLoading(true)
     getUsageProfile(params)
       .then((res) => {
-        // Rotate to start at 6am (index 24 = 6h × 4 intervals/h)
+        // No rotation — chart runs 0:00 → 23:45
         setChartData(
-          Array.from({ length: 96 }, (_, i) => {
-            const idx = (i + 24) % 96
-            return { hour: fmtTime(res.intervals[idx]), usage: res.usage[idx] }
-          })
+          Array.from({ length: 96 }, (_, i) => ({
+            hour: fmtTime(res.intervals[i]),
+            usage: res.usage[i],
+          }))
         )
       })
       .catch(console.error)
