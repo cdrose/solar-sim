@@ -117,22 +117,32 @@ export function runSimulation(usageParams, solarSetup, season, conditions) {
   const gridExport       = Array(TOTAL_INTERVALS).fill(0)
 
   for (let i = 0; i < TOTAL_INTERVALS; i++) {
-    const net = solar[i] - usage[i]
+    const solarKW  = solar[i]
+    const usageKW  = usage[i]
+    const netKW    = solarKW - usageKW
 
-    if (net >= 0) {
-      solarDirect[i] = usage[i]
-      const headroom  = (battCap - batteryState) / BATTERY_EFFICIENCY
-      const chargeIn  = Math.min(net, headroom)
-      batteryCharge[i] = chargeIn
-      batteryState = Math.min(batteryState + chargeIn * BATTERY_EFFICIENCY, battCap)
-      gridExport[i] = Math.max(net - chargeIn, 0)
+    if (netKW >= 0) {
+      // Solar surplus — charge battery then export remainder
+      solarDirect[i] = usageKW
+
+      const availableKWh  = netKW * INTERVAL_HOURS
+      const headroomKWh   = (battCap - batteryState) / BATTERY_EFFICIENCY
+      const chargeInputKWh = Math.min(availableKWh, headroomKWh)
+
+      batteryCharge[i] = chargeInputKWh / INTERVAL_HOURS           // back to kW for display
+      batteryState = Math.min(batteryState + chargeInputKWh * BATTERY_EFFICIENCY, battCap)
+      gridExport[i] = Math.max(availableKWh - chargeInputKWh, 0) / INTERVAL_HOURS
     } else {
-      const deficit   = -net
-      solarDirect[i]  = solar[i]
-      const discharge = Math.min(deficit, batteryState * BATTERY_EFFICIENCY)
-      batteryDischarge[i] = discharge
-      batteryState = Math.max(batteryState - discharge / BATTERY_EFFICIENCY, 0)
-      gridImport[i] = Math.max(deficit - discharge, 0)
+      // Solar deficit — discharge battery then import remainder
+      solarDirect[i] = solarKW
+
+      const deficitKWh        = (-netKW) * INTERVAL_HOURS
+      const deliverableKWh    = batteryState * BATTERY_EFFICIENCY
+      const dischargeOutputKWh = Math.min(deficitKWh, deliverableKWh)
+
+      batteryDischarge[i] = dischargeOutputKWh / INTERVAL_HOURS    // back to kW for display
+      batteryState = Math.max(batteryState - dischargeOutputKWh / BATTERY_EFFICIENCY, 0)
+      gridImport[i] = Math.max(deficitKWh - dischargeOutputKWh, 0) / INTERVAL_HOURS
     }
   }
 
