@@ -4,7 +4,7 @@ import {
   Divider,
 } from '@mui/material'
 import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
+  Area, XAxis, YAxis, CartesianGrid,
   ResponsiveContainer, PieChart, Pie, Cell, ComposedChart, Line,
 } from 'recharts'
 import { simulate } from '../api'
@@ -19,6 +19,14 @@ const SCENARIOS = [
 
 const PIE_COLORS = ['#22c55e', '#f59e0b', '#ef4444']
 
+const SERIES = [
+  { key: 'Solar Direct',   color: '#22c55e' },
+  { key: 'Battery Charge', color: '#06b6d4' },
+  { key: 'Battery',        color: '#3b82f6' },
+  { key: 'Grid Import',    color: '#ef4444' },
+  { key: 'Solar Gen',      color: '#f59e0b' },
+]
+
 function StatRow({ label, value, color }) {
   return (
     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: '3px' }}>
@@ -31,25 +39,44 @@ function StatRow({ label, value, color }) {
   )
 }
 
-const CustomTooltip = ({ active, payload, label }) => {
-  if (active && payload?.length) {
-    return (
-      <Box sx={{ bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider', borderRadius: 1, px: 1.5, py: 1, fontSize: 12 }}>
-        <Typography variant="caption" fontWeight={700}>{label}</Typography>
-        {payload.map((p) => (
-          <Box key={p.name} sx={{ color: p.color }}>
-            {p.name}: {p.value?.toFixed(2)} kW
-          </Box>
-        ))}
-      </Box>
-    )
-  }
-  return null
+function HoverBar({ hovered }) {
+  return (
+    <Box sx={{
+      height: 36, display: 'flex', alignItems: 'center', gap: 1.5,
+      px: 1, mb: 0.5, borderRadius: 1, flexWrap: 'wrap',
+      bgcolor: hovered ? 'action.hover' : 'transparent',
+      minHeight: 36,
+    }}>
+      {hovered ? (
+        <>
+          <Typography variant="caption" fontWeight={700} sx={{ minWidth: 36 }}>{hovered.label}</Typography>
+          {SERIES.map(({ key, color }) => {
+            const entry = hovered.payload.find(p => p.name === key)
+            if (!entry) return null
+            return (
+              <Box key={key} sx={{ display: 'flex', alignItems: 'center', gap: 0.4 }}>
+                <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: color, flexShrink: 0 }} />
+                <Typography variant="caption" sx={{ color, fontWeight: 600 }}>
+                  {entry.value?.toFixed(2)}
+                </Typography>
+              </Box>
+            )
+          })}
+          <Typography variant="caption" color="text.disabled" sx={{ fontSize: 10 }}>kW</Typography>
+        </>
+      ) : (
+        <Typography variant="caption" color="text.disabled" sx={{ fontStyle: 'italic' }}>
+          Hover chart to inspect
+        </Typography>
+      )}
+    </Box>
+  )
 }
 
 function ScenarioCard({ scenario, usageParams, solarSetup }) {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [hovered, setHovered] = useState(null)
 
   useEffect(() => {
     setLoading(true)
@@ -91,10 +118,17 @@ function ScenarioCard({ scenario, usageParams, solarSetup }) {
           </Box>
         ) : (
           <>
+            <HoverBar hovered={hovered} />
+
             {/* Stacked area chart */}
             <Box sx={{ height: 150 }}>
               <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
+                <ComposedChart
+                  data={chartData}
+                  margin={{ top: 4, right: 4, bottom: 0, left: -20 }}
+                  onMouseMove={(e) => e.activePayload && setHovered({ label: e.activeLabel, payload: e.activePayload })}
+                  onMouseLeave={() => setHovered(null)}
+                >
                   <defs>
                     {[['solarGrad','#22c55e'],['battGrad','#3b82f6'],['gridGrad','#ef4444'],['chargeGrad','#06b6d4']].map(([id, col]) => (
                       <linearGradient key={id} id={id} x1="0" y1="0" x2="0" y2="1">
@@ -106,7 +140,6 @@ function ScenarioCard({ scenario, usageParams, solarSetup }) {
                   <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
                   <XAxis dataKey="hour" tick={{ fontSize: 9 }} interval={23} />
                   <YAxis tick={{ fontSize: 9 }} unit="kW" width={36} />
-                  <Tooltip content={<CustomTooltip />} />
                   <Area type="monotone" dataKey="Battery Charge" stackId="2" stroke="#06b6d4" fill="url(#chargeGrad)" strokeWidth={1.5} dot={false} />
                   <Line type="monotone" dataKey="Solar Gen" stroke="#f59e0b" strokeWidth={1.5} strokeDasharray="5 3" dot={false} />
                   <Area type="monotone" dataKey="Solar Direct" stackId="1" stroke="#22c55e" fill="url(#solarGrad)" strokeWidth={1.5} dot={false} />

@@ -5,7 +5,7 @@ import {
 } from '@mui/material'
 import TuneIcon from '@mui/icons-material/Tune'
 import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, ResponsiveContainer,
 } from 'recharts'
 import { getPresets, getUsageProfile } from '../api'
 import { buildUsageProfile, fmtTime } from '../simulator'
@@ -62,23 +62,12 @@ function fmtVal(val, s) {
   return s.isHour ? fmtHour(val) : `${val.toFixed(2)} ${s.unit}`
 }
 
-const CustomTooltip = ({ active, payload }) => {
-  if (active && payload?.length) {
-    return (
-      <Box sx={{ bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider', borderRadius: 1, px: 1.5, py: 0.75 }}>
-        <Typography variant="caption">{payload[0]?.payload?.hour}</Typography><br />
-        <Typography variant="caption" color="primary">{payload[0]?.value?.toFixed(2)} kW</Typography>
-      </Box>
-    )
-  }
-  return null
-}
-
 export default function UsageProfilePanel({ params, onChange }) {
   const [presets, setPresets] = useState([])
   const [chartData, setChartData] = useState([])
   const [loading, setLoading] = useState(false)
   const [anchorEl, setAnchorEl] = useState(null)
+  const [hovered, setHovered] = useState(null)
   const customBtnRef = useRef(null)
 
   const isCustom = Boolean(params.hourly)
@@ -147,6 +136,19 @@ export default function UsageProfilePanel({ params, onChange }) {
           onChange={(hourly) => onChange({ hourly })}
         />
 
+        {/* Hover info bar above chart */}
+        <Box sx={{ height: 24, display: 'flex', alignItems: 'center', px: 0.5, mb: 0.5 }}>
+          {hovered ? (
+            <Typography variant="caption" color="primary" fontWeight={600}>
+              {hovered.label} — {hovered.value?.toFixed(2)} kW
+            </Typography>
+          ) : (
+            <Typography variant="caption" color="text.disabled" sx={{ fontStyle: 'italic' }}>
+              Hover chart to inspect
+            </Typography>
+          )}
+        </Box>
+
         {/* Chart — full width, proper Y axis */}
         <Box sx={{ height: 180, mb: 2, position: 'relative' }}>
           {loading && (
@@ -155,7 +157,12 @@ export default function UsageProfilePanel({ params, onChange }) {
             </Box>
           )}
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData} margin={{ top: 4, right: 8, bottom: 0, left: 4 }}>
+            <AreaChart
+              data={chartData}
+              margin={{ top: 4, right: 8, bottom: 0, left: 4 }}
+              onMouseMove={(e) => e.activePayload && setHovered({ label: e.activeLabel, value: e.activePayload[0]?.value })}
+              onMouseLeave={() => setHovered(null)}
+            >
               <defs>
                 <linearGradient id="usageGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.55} />
@@ -170,7 +177,6 @@ export default function UsageProfilePanel({ params, onChange }) {
                 tickFormatter={(v) => `${v} kW`}
                 label={{ value: 'kW', angle: -90, position: 'insideLeft', offset: 10, fontSize: 11, fill: '#94a3b8' }}
               />
-              <Tooltip content={<CustomTooltip />} />
               <Area
                 type="monotone" dataKey="usage"
                 stroke="#f59e0b" fill="url(#usageGrad)"
