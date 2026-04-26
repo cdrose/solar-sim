@@ -10,7 +10,14 @@ const WINTER_DAYS = 182
 // ---------------------------------------------------------------------------
 
 function gaussian(hours, center, sigma, amplitude) {
-  return hours.map((h) => amplitude * Math.exp(-0.5 * ((h - center) / sigma) ** 2))
+  const values = hours.map((h) => amplitude * Math.exp(-0.5 * ((h - center) / sigma) ** 2))
+  // When center falls between integer hours both neighbours are equidistant,
+  // producing a flat top. Inject the true peak at the nearest integer instead.
+  if (center % 1 !== 0) {
+    const nearest = Math.round(center)
+    if (nearest >= 0 && nearest < 24) values[nearest] = amplitude
+  }
+  return values
 }
 
 function arrayAdd(a, b) {
