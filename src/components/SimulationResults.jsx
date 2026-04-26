@@ -106,7 +106,7 @@ function ScenarioCard({ scenario, usageParams, solarSetup }) {
                   <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
                   <XAxis dataKey="hour" tick={{ fontSize: 9 }} interval={23} />
                   <YAxis tick={{ fontSize: 9 }} unit="kW" width={36} />
-                  <Tooltip content={<CustomTooltip />} />
+                  <Tooltip content={<CustomTooltip />} position={{ y: 0 }} />
                   <Area type="monotone" dataKey="Battery Charge" stackId="2" stroke="#06b6d4" fill="url(#chargeGrad)" strokeWidth={1.5} dot={false} />
                   <Line type="monotone" dataKey="Solar Gen" stroke="#f59e0b" strokeWidth={1.5} strokeDasharray="5 3" dot={false} />
                   <Area type="monotone" dataKey="Solar Direct" stackId="1" stroke="#22c55e" fill="url(#solarGrad)" strokeWidth={1.5} dot={false} />

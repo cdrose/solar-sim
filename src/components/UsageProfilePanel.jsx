@@ -170,7 +170,7 @@ export default function UsageProfilePanel({ params, onChange }) {
                 tickFormatter={(v) => `${v} kW`}
                 label={{ value: 'kW', angle: -90, position: 'insideLeft', offset: 10, fontSize: 11, fill: '#94a3b8' }}
               />
-              <Tooltip content={<CustomTooltip />} />
+              <Tooltip content={<CustomTooltip />} position={{ y: 0 }} />
               <Area
                 type="monotone" dataKey="usage"
                 stroke="#f59e0b" fill="url(#usageGrad)"
