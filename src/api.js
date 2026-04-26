@@ -7,7 +7,7 @@ export const getPresets = () =>
 
 export const getUsageProfile = (params) => {
   const usage = buildUsageProfile(params)
-  const intervals = Array.from({ length: 96 }, (_, i) => i * 0.25 + 0.125)
+  const intervals = Array.from({ length: 96 }, (_, i) => i * 0.25)
   return Promise.resolve({ intervals, usage })
 }
 

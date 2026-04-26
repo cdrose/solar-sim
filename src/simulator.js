@@ -144,7 +144,7 @@ export function runSimulation(usageParams, solarSetup, season, conditions) {
   const selfConsumed  = (arraySum(solarDirect) + arraySum(batteryDischarge)) * INTERVAL_HOURS
 
   return {
-    intervals:         Array.from({ length: TOTAL_INTERVALS }, (_, i) => intervalMidpoint(i)),
+    intervals:         Array.from({ length: TOTAL_INTERVALS }, (_, i) => i * INTERVAL_HOURS),
     usage:             usage,
     solar:             solar,
     solar_direct:      solarDirect.map(r3),
