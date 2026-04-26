@@ -62,10 +62,11 @@ function ScenarioCard({ scenario, usageParams, solarSetup }) {
   const chartData = data
     ? data.intervals.map((t, i) => ({
         hour: fmtTime(t),
-        'Solar Direct': data.solar_direct[i],
-        'Battery':      data.battery_discharge[i],
-        'Grid Import':  data.grid_import[i],
-        'Solar Gen':    data.solar[i],
+        'Solar Direct':    data.solar_direct[i],
+        'Battery':         data.battery_discharge[i],
+        'Grid Import':     data.grid_import[i],
+        'Solar Gen':       data.solar[i],
+        'Battery Charge':  data.battery_charge[i],
       }))
     : []
 
@@ -95,7 +96,7 @@ function ScenarioCard({ scenario, usageParams, solarSetup }) {
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
                   <defs>
-                    {[['solarGrad','#22c55e'],['battGrad','#3b82f6'],['gridGrad','#ef4444']].map(([id, col]) => (
+                    {[['solarGrad','#22c55e'],['battGrad','#3b82f6'],['gridGrad','#ef4444'],['chargeGrad','#06b6d4']].map(([id, col]) => (
                       <linearGradient key={id} id={id} x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor={col} stopOpacity={0.6} />
                         <stop offset="95%" stopColor={col} stopOpacity={0.05} />
@@ -106,6 +107,7 @@ function ScenarioCard({ scenario, usageParams, solarSetup }) {
                   <XAxis dataKey="hour" tick={{ fontSize: 9 }} interval={23} />
                   <YAxis tick={{ fontSize: 9 }} unit="kW" width={36} />
                   <Tooltip content={<CustomTooltip />} />
+                  <Area type="monotone" dataKey="Battery Charge" stackId="2" stroke="#06b6d4" fill="url(#chargeGrad)" strokeWidth={1.5} dot={false} />
                   <Line type="monotone" dataKey="Solar Gen" stroke="#f59e0b" strokeWidth={1.5} strokeDasharray="5 3" dot={false} />
                   <Area type="monotone" dataKey="Solar Direct" stackId="1" stroke="#22c55e" fill="url(#solarGrad)" strokeWidth={1.5} dot={false} />
                   <Area type="monotone" dataKey="Battery"      stackId="1" stroke="#3b82f6" fill="url(#battGrad)"  strokeWidth={1.5} dot={false} />
@@ -169,7 +171,7 @@ export default function SimulationResults({ usageParams, solarSetup }) {
 
         <Divider sx={{ mt: 2, mb: 1 }} />
         <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 3 }}>
-          {[['#22c55e','Solar Direct'],['#3b82f6','Battery Discharge'],['#ef4444','Grid Import']].map(([c,l]) => (
+          {[['#22c55e','Solar Direct'],['#3b82f6','Battery Discharge'],['#06b6d4','Battery Charging'],['#ef4444','Grid Import']].map(([c,l]) => (
             <Box key={l} sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 0.75 }}>
               <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: c, flexShrink: 0 }} />
               <Typography variant="caption" color="text.secondary">{l}</Typography>
